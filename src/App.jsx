@@ -8,7 +8,11 @@ import logo from './assets/logo.svg';
 
 function App() {
   const { user, loading } = useAuth();
-  const [isStarted, setIsStarted] = useState(false);
+  const [isStarted, setIsStarted] = useState(() => {
+    // If user is already logged in, start automatically
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? true : false;
+  });
   const [entries, setEntries] = useState(() => {
     const saved = localStorage.getItem('tracspend-entries');
     return saved ? JSON.parse(saved) : [];
@@ -46,6 +50,13 @@ function App() {
       </div>
     );
   }
+
+  useEffect(() => {
+    // When user logs in, automatically start the app
+    if (user) {
+      setIsStarted(true);
+    }
+  }, [user]);
 
   if (!user) {
     return (
