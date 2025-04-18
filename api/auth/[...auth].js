@@ -52,14 +52,22 @@ export default async function handler(req, res) {
       console.log('User data:', userData);
       
       // Create session
+      const user = {
+        id: userData.id || userData.sub,
+        name: userData.name,
+        email: userData.email,
+        provider
+      };
+      
+      console.log('Setting user cookie:', user);
+      
+      // Set cookie with proper encoding and security attributes
+      const cookieValue = encodeURIComponent(JSON.stringify(user));
       res.setHeader('Set-Cookie', [
-        `user=${JSON.stringify({
-          id: userData.id || userData.sub,
-          name: userData.name,
-          email: userData.email,
-          provider
-        })}; Path=/; HttpOnly; SameSite=Lax`
+        `user=${cookieValue}; Path=/; HttpOnly; SameSite=Lax; Secure`
       ]);
+      
+      console.log('Cookie header set');
 
       console.log('Setting cookie and redirecting...');
       res.redirect('/');
