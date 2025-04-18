@@ -5,25 +5,23 @@ export default async function handler(req, res) {
     query: req.query,
     cookies: req.cookies
   });
-  const { provider } = req.query;
 
-  // Debug: If no code parameter, respond with a message
-  if (!req.query.code) {
+  const { provider, code, state } = req.query;
+
+  // Debug: Ensure code parameter exists
+  if (!code) {
     console.log('No code parameter received in callback');
-    res.status(400).send('No code parameter received in callback');
-    return;
+    return res.status(400).send('No code parameter received in callback');
   }
-
-  const { code, state } = req.query;
 
   try {
     // Exchange code for access token
     console.log('Attempting to exchange code for token...');
-    const tokenEndpoint = provider === 'github' 
+    const tokenEndpoint = provider === 'github'
       ? 'https://github.com/login/oauth/access_token'
       : 'https://oauth2.googleapis.com/token';
     console.log('Token endpoint:', tokenEndpoint);
-    
+
     const tokenResponse = await fetch(tokenEndpoint, {
       method: 'POST',
       headers: {
@@ -34,14 +32,14 @@ export default async function handler(req, res) {
         client_id: process.env[`VITE_${provider.toUpperCase()}_ID`],
         client_secret: process.env[`VITE_${provider.toUpperCase()}_SECRET`],
         code,
-        redirect_uri: `${req.headers.origin}/api/auth/callback/${provider}`,
+        redirect_uri: `${req.headers.origin}/api/auth/callback?provider=${provider}`,
         grant_type: 'authorization_code'
       })
     });
 
     const tokenData = await tokenResponse.json();
     console.log('Token response:', tokenData);
-    
+
     // Get user info
     const userResponse = await fetch(
       provider === 'github'
@@ -56,7 +54,7 @@ export default async function handler(req, res) {
 
     const userData = await userResponse.json();
     console.log('User data:', userData);
-    
+
     // Create session
     const user = {
       id: userData.id || userData.sub,
@@ -64,10 +62,9 @@ export default async function handler(req, res) {
       email: userData.email,
       provider
     };
-    
     console.log('User authenticated:', user);
 
-    // Redirect with success parameter
+    // Redirect to root with user info
     res.redirect('/?auth=success&user=' + encodeURIComponent(JSON.stringify(user)));
   } catch (error) {
     console.error('Auth error:', error);
