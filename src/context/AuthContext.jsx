@@ -8,13 +8,28 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const session = getSession();
-    setUser(session);
-    setLoading(false);
+    const loadSession = async () => {
+      try {
+        const session = await getSession();
+        setUser(session);
+      } catch (error) {
+        console.error('Failed to load session:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadSession();
   }, []);
 
   const login = (provider = 'github') => signIn(provider);
-  const logout = () => signOut();
+  const logout = async () => {
+    try {
+      await signOut();
+      setUser(null);
+    } catch (error) {
+      console.error('Failed to sign out:', error);
+    }
+  };
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout }}>

@@ -38,12 +38,20 @@ export const signIn = async (provider) => {
   window.location.href = `${providerConfig.authorization}?${params}`;
 };
 
-export const signOut = () => {
-  localStorage.removeItem('user');
+export const signOut = async () => {
+  await fetch('/api/auth/signout', { method: 'POST' });
   window.location.reload();
 };
 
-export const getSession = () => {
-  const user = localStorage.getItem('user');
-  return user ? JSON.parse(user) : null;
+export const getSession = async () => {
+  try {
+    const response = await fetch('/api/auth/session');
+    if (response.ok) {
+      return await response.json();
+    }
+    return null;
+  } catch (error) {
+    console.error('Failed to get session:', error);
+    return null;
+  }
 };
