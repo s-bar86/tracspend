@@ -10,5 +10,10 @@
       "destination": "/api/auth/:path*"
     }
   ],
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
   "env": {}
 }
