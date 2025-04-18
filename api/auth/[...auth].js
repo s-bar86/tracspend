@@ -59,18 +59,10 @@ export default async function handler(req, res) {
         provider
       };
       
-      console.log('Setting user cookie:', user);
-      
-      // Set cookie with proper encoding and security attributes
-      const cookieValue = encodeURIComponent(JSON.stringify(user));
-      res.setHeader('Set-Cookie', [
-        `user=${cookieValue}; Path=/; HttpOnly; SameSite=Lax; Secure`
-      ]);
-      
-      console.log('Cookie header set');
+      console.log('User authenticated:', user);
 
-      console.log('Setting cookie and redirecting...');
-      res.redirect('/');
+      // Redirect with success parameter
+      res.redirect('/?auth=success&user=' + encodeURIComponent(JSON.stringify(user)));
     } catch (error) {
       console.error('Auth error:', error);
       console.error('Error stack:', error.stack);

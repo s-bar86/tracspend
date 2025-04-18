@@ -43,15 +43,32 @@ export const signOut = async () => {
   window.location.reload();
 };
 
-export const getSession = async () => {
+export const getSession = () => {
   try {
-    const response = await fetch('/api/auth/session');
-    if (response.ok) {
-      return await response.json();
-    }
-    return null;
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
   } catch (error) {
     console.error('Failed to get session:', error);
     return null;
   }
+};
+
+// Handle URL parameters after OAuth callback
+export const handleCallback = () => {
+  const params = new URLSearchParams(window.location.search);
+  const authStatus = params.get('auth');
+  const userData = params.get('user');
+
+  if (authStatus === 'success' && userData) {
+    try {
+      const user = JSON.parse(decodeURIComponent(userData));
+      localStorage.setItem('user', JSON.stringify(user));
+      // Clean up URL
+      window.history.replaceState({}, document.title, '/');
+      return user;
+    } catch (error) {
+      console.error('Failed to parse user data:', error);
+    }
+  }
+  return null;
 };

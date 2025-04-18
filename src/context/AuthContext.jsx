@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import { signIn, signOut, getSession } from '../auth';
+import { signIn, signOut, getSession, handleCallback } from '../auth';
 
 const AuthContext = createContext();
 
@@ -8,17 +8,18 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadSession = async () => {
-      try {
-        const session = await getSession();
-        setUser(session);
-      } catch (error) {
-        console.error('Failed to load session:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadSession();
+    // Check for OAuth callback first
+    const callbackUser = handleCallback();
+    if (callbackUser) {
+      setUser(callbackUser);
+      setLoading(false);
+      return;
+    }
+
+    // Otherwise check for existing session
+    const session = getSession();
+    setUser(session);
+    setLoading(false);
   }, []);
 
   const login = (provider = 'github') => signIn(provider);
