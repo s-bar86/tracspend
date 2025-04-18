@@ -58,10 +58,12 @@ export const handleCallback = () => {
   const params = new URLSearchParams(window.location.search);
   const authStatus = params.get('auth');
   const userData = params.get('user');
+  console.log('OAuth callback params:', { authStatus, userData });
 
   if (authStatus === 'success' && userData) {
     try {
       const user = JSON.parse(decodeURIComponent(userData));
+      console.log('Parsed user:', user);
       localStorage.setItem('user', JSON.stringify(user));
       // Clean up URL
       window.history.replaceState({}, document.title, '/');
