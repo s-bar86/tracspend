@@ -1,4 +1,10 @@
 export default async function handler(req, res) {
+  console.log('Auth callback received:', {
+    url: req.url,
+    method: req.method,
+    query: req.query,
+    cookies: req.cookies
+  });
   const { provider } = req.query;
 
   if (req.url.includes('/callback')) {
@@ -6,9 +12,13 @@ export default async function handler(req, res) {
     
     try {
       // Exchange code for access token
-      const tokenResponse = await fetch(provider === 'github' 
+      console.log('Attempting to exchange code for token...');
+      const tokenEndpoint = provider === 'github' 
         ? 'https://github.com/login/oauth/access_token'
-        : 'https://oauth2.googleapis.com/token', {
+        : 'https://oauth2.googleapis.com/token';
+      console.log('Token endpoint:', tokenEndpoint);
+      
+      const tokenResponse = await fetch(tokenEndpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -24,6 +34,7 @@ export default async function handler(req, res) {
       });
 
       const tokenData = await tokenResponse.json();
+      console.log('Token response:', tokenData);
       
       // Get user info
       const userResponse = await fetch(
@@ -38,6 +49,7 @@ export default async function handler(req, res) {
       );
 
       const userData = await userResponse.json();
+      console.log('User data:', userData);
       
       // Create session
       res.setHeader('Set-Cookie', [
@@ -49,9 +61,11 @@ export default async function handler(req, res) {
         })}; Path=/; HttpOnly; SameSite=Lax`
       ]);
 
+      console.log('Setting cookie and redirecting...');
       res.redirect('/');
     } catch (error) {
       console.error('Auth error:', error);
+      console.error('Error stack:', error.stack);
       res.redirect('/?error=AuthenticationFailed');
     }
   } else {
