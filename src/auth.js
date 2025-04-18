@@ -20,32 +20,27 @@ const config = {
   ]
 };
 
-export const signIn = (provider = 'github') => {
+export const signIn = async (provider) => {
+  const providerConfig = config.providers.find(p => p.id === provider);
+  if (!providerConfig) throw new Error(`Provider ${provider} not found`);
+
+  const state = Math.random().toString(36).substring(7);
+  sessionStorage.setItem('oauth_state', state);
+
   const params = new URLSearchParams({
-    client_id: provider === 'github' 
-      ? import.meta.env.VITE_GITHUB_ID 
-      : import.meta.env.VITE_GOOGLE_ID,
+    client_id: providerConfig.clientId,
     redirect_uri: `${window.location.origin}/api/auth/callback/${provider}`,
-    scope: provider === 'github' 
-      ? 'read:user user:email' 
-      : 'email profile',
-    state: Date.now().toString(),
+    scope: providerConfig.scope || 'read:user user:email',
+    state,
     response_type: 'code'
   });
 
-  // For GitHub
-  if (provider === 'github') {
-    window.location.href = `https://github.com/login/oauth/authorize?${params}`;
-  }
-  // For Google
-  else {
-    window.location.href = `https://accounts.google.com/o/oauth2/auth?${params}`;
-  }
+  window.location.href = `${providerConfig.authorization}?${params}`;
 };
 
-export const signOut = () => {
-  localStorage.removeItem('user');
-  window.location.href = '/';
+export const signOut = async () => {
+  await fetch('/api/auth/signout', { method: 'POST' });
+  window.location.reload();
 };
 
 export const getSession = () => {
