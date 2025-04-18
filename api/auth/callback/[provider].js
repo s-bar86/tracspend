@@ -7,6 +7,13 @@ export default async function handler(req, res) {
   });
   const { provider } = req.query;
 
+  // Debug: If no code parameter, respond with a message
+  if (!req.query.code) {
+    console.log('No code parameter received in callback');
+    res.status(400).send('No code parameter received in callback');
+    return;
+  }
+
   const { code, state } = req.query;
 
   try {
