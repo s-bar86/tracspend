@@ -12,25 +12,48 @@ let cachedDb = null;
 
 async function connectToDatabase() {
   if (cachedClient && cachedDb) {
+    console.log('Using cached database connection');
     return { client: cachedClient, db: cachedDb };
   }
 
   if (!uri) {
+    console.error('MONGODB_URI is not defined in environment variables');
     throw new Error('Please define the MONGODB_URI environment variable');
   }
 
   try {
-    console.log('Connecting to MongoDB...', { uri: uri.split('@')[1] }); // Log partial URI for debugging
-    const client = await MongoClient.connect(uri, options);
-    const db = client.db('tracspend');
-    console.log('Successfully connected to MongoDB');
+    // Log connection attempt with sanitized URI
+    const sanitizedUri = uri.replace(/:[^@]*@/, ':****@');
+    console.log('Attempting MongoDB connection with URI:', sanitizedUri);
+    
+    // Test URI format
+    const uriParts = uri.split('@');
+    if (uriParts.length !== 2) {
+      throw new Error('Invalid MongoDB URI format');
+    }
+    
+    const client = await MongoClient.connect(uri);
+    const dbName = uri.split('/').pop().split('?')[0] || 'tracspend';
+    console.log('Using database:', dbName);
+    
+    const db = client.db(dbName);
+    
+    // Test the connection
+    await db.command({ ping: 1 });
+    console.log('Successfully connected to MongoDB and verified connection');
 
     cachedClient = client;
     cachedDb = db;
 
     return { client, db };
   } catch (error) {
-    console.error('MongoDB connection error:', error);
+    console.error('MongoDB connection error details:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      stack: error.stack,
+      uri: uri ? 'URI is defined' : 'URI is undefined'
+    });
     throw error;
   }
 }
@@ -39,11 +62,17 @@ export default async function handler(req, res) {
   // Always set content type to JSON
   res.setHeader('Content-Type', 'application/json');
 
-  console.log('API Request:', {
+  // Log detailed request information
+  console.log('API Request Details:', {
     method: req.method,
     url: req.url,
     query: req.query,
-    headers: req.headers,
+    headers: {
+      ...req.headers,
+      // Remove sensitive headers
+      authorization: req.headers.authorization ? '[REDACTED]' : undefined,
+      cookie: req.headers.cookie ? '[REDACTED]' : undefined
+    },
     body: req.body
   });
 
@@ -62,26 +91,33 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('Connecting to database...');
+    console.log('Initiating database connection...');
     const { db } = await connectToDatabase();
     const expenses = db.collection('expenses');
-    console.log('Connected to database');
+    console.log('Successfully connected to database and got expenses collection');
 
     switch (req.method) {
       case 'GET':
         try {
-          console.log('Fetching expenses...');
+          console.log('Starting expenses fetch...');
           const userExpenses = await expenses
             .find({})
             .sort({ date: -1 })
             .toArray();
-          console.log(`Found ${userExpenses.length} expenses`);
-          return res.status(200).json(userExpenses);
+          console.log(`Successfully found ${userExpenses.length} expenses`);
+          const response = { success: true, data: userExpenses };
+          console.log('Sending response:', response);
+          return res.status(200).json(response);
         } catch (error) {
-          console.error('Error fetching expenses:', error);
+          console.error('Error fetching expenses:', {
+            error: error.message,
+            stack: error.stack,
+            code: error.code
+          });
           return res.status(500).json({ 
             error: 'Failed to fetch expenses',
             message: error.message,
+            details: error.code,
             stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
           });
         }
