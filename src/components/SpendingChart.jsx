@@ -17,19 +17,39 @@ const CHART_COLORS = [
   '#FFE5D9'
 ];
 
-export default function SpendingChart({ entries }) {
+const DEFAULT_DATA = {
+  labels: ['No Data'],
+  datasets: [{
+    data: [100],
+    backgroundColor: ['#E5E7EB'],
+    borderColor: ['#FFFFFF'],
+    borderWidth: 2,
+  }]
+};
+
+export default function SpendingChart({ entries = [] }) {
   const chartData = useMemo(() => {
+    if (!entries || entries.length === 0) {
+      return DEFAULT_DATA;
+    }
+
     const tagTotals = {};
     let total = 0;
 
     entries.forEach(entry => {
-      tagTotals[entry.tag] = (tagTotals[entry.tag] || 0) + entry.amount;
-      total += entry.amount;
+      if (entry && entry.tag && entry.amount) {
+        tagTotals[entry.tag] = (tagTotals[entry.tag] || 0) + entry.amount;
+        total += entry.amount;
+      }
     });
 
     const sortedTags = Object.entries(tagTotals)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 10); // Show top 10 categories
+
+    if (sortedTags.length === 0) {
+      return DEFAULT_DATA;
+    }
 
     return {
       labels: sortedTags.map(([tag]) => tag),

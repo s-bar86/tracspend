@@ -7,13 +7,17 @@ const FILTER_OPTIONS = {
   MONTHLY: 'monthly'
 };
 
-export default function HistoryView({ entries, onEdit, onDelete }) {
+export default function HistoryView({ entries = [], onEdit = () => {}, onDelete = () => {} }) {
   const [activeFilter, setActiveFilter] = useState(FILTER_OPTIONS.DAILY);
   const [editingEntry, setEditingEntry] = useState(null);
   const [editAmount, setEditAmount] = useState('');
   const [editTag, setEditTag] = useState('');
 
   const groupedEntries = useMemo(() => {
+    if (!entries || entries.length === 0) {
+      return { groups: {}, total: 0 };
+    }
+
     const now = new Date();
     let startDate = new Date(now);
 
@@ -29,11 +33,13 @@ export default function HistoryView({ entries, onEdit, onDelete }) {
     }
 
     const filtered = entries.filter(entry => {
+      if (!entry || !entry.date) return false;
       const entryDate = new Date(entry.date);
       return entryDate >= startDate;
     });
 
     const groups = filtered.reduce((acc, entry) => {
+      if (!entry || !entry.date || !entry.amount) return acc;
       const date = new Date(entry.date).toLocaleDateString();
       if (!acc[date]) {
         acc[date] = {
@@ -46,14 +52,20 @@ export default function HistoryView({ entries, onEdit, onDelete }) {
       return acc;
     }, {});
 
-    const total = filtered.reduce((sum, entry) => sum + entry.amount, 0);
+    const total = filtered.reduce((sum, entry) => {
+      if (!entry || !entry.amount) return sum;
+      return sum + entry.amount;
+    }, 0);
 
     return { groups, total };
   }, [entries, activeFilter]);
 
   const tagTotals = useMemo(() => {
+    if (!entries || entries.length === 0) return {};
+    
     const totals = {};
     entries.forEach(entry => {
+      if (!entry || !entry.tag || !entry.amount) return;
       totals[entry.tag] = (totals[entry.tag] || 0) + entry.amount;
     });
     return totals;

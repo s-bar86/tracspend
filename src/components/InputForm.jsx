@@ -6,7 +6,7 @@ const PRESET_TAGS = [
   'Bills', 'Groceries', 'Entertainment', 'Health'
 ];
 
-export default function InputForm({ onSave }) {
+export default function InputForm({ onSave = () => {} }) {
   const [amount, setAmount] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
   const [customTag, setCustomTag] = useState('');
@@ -16,18 +16,32 @@ export default function InputForm({ onSave }) {
     e.preventDefault();
     if (!amount || !(selectedTag || customTag)) return;
 
-    const entry = {
-      id: crypto.randomUUID(),
-      amount: parseFloat(amount),
-      tag: isCustomTag ? customTag : selectedTag,
-      date: new Date().toISOString()
-    };
+    try {
+      const entry = {
+        id: crypto.randomUUID(),
+        amount: parseFloat(amount),
+        tag: isCustomTag ? customTag : selectedTag,
+        date: new Date().toISOString()
+      };
 
-    onSave(entry);
-    setAmount('');
-    setSelectedTag('');
-    setCustomTag('');
-    setIsCustomTag(false);
+      onSave(entry);
+      setAmount('');
+      setSelectedTag('');
+      setCustomTag('');
+      setIsCustomTag(false);
+    } catch (error) {
+      console.error('Error saving entry:', error);
+    }
+  };
+
+  const handleTagChange = (e) => {
+    const value = e.target.value;
+    if (value === 'custom') {
+      setIsCustomTag(true);
+      setSelectedTag('');
+    } else {
+      setSelectedTag(value);
+    }
   };
 
   return (
@@ -62,7 +76,7 @@ export default function InputForm({ onSave }) {
           <select
             id="tag"
             value={selectedTag}
-            onChange={(e) => setSelectedTag(e.target.value)}
+            onChange={handleTagChange}
             required={!isCustomTag}
             className="w-full p-2.5 sm:p-3 text-sm sm:text-base border border-gray-200 rounded-xl bg-white shadow-sm hover:shadow-md transition-shadow duration-200 focus:shadow-lg outline-none focus:border-primary/30 focus:ring-2 focus:ring-primary/20"
           >
