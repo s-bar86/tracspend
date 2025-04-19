@@ -79,9 +79,9 @@ export default async function handler(req, res) {
   console.log('Request received:', {
     method: req.method,
     url: req.url,
-    headers: req.headers,
     query: req.query,
-    body: req.body
+    body: req.body,
+    headers: req.headers
   });
 
   // Handle preflight request
@@ -99,13 +99,20 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       try {
         console.log('Executing GET request...');
-        // Get user ID from query parameter or header
-        const userId = req.query.userId || req.headers['x-user-id'];
+        // Get user ID from query parameter
+        const userId = req.query.userId;
         console.log('Fetching expenses for user:', userId);
         
-        const query = userId ? { userId } : {};
+        if (!userId) {
+          return res.status(400).json({
+            success: false,
+            error: 'Missing userId parameter'
+          });
+        }
+
+        const query = { userId };
         const userExpenses = await expenses.find(query).sort({ date: -1 }).toArray();
-        console.log(`Found ${userExpenses.length} expenses`);
+        console.log(`Found ${userExpenses.length} expenses for user ${userId}`);
         
         const response = {
           success: true,
@@ -136,22 +143,21 @@ export default async function handler(req, res) {
         console.log('Handling POST request:', req.body);
         
         // Validate request body
-        if (!req.body || !req.body.amount || !req.body.tag) {
+        if (!req.body || !req.body.amount || !req.body.tag || !req.body.userId) {
+          console.error('Invalid request body:', req.body);
           return res.status(400).json({
             success: false,
             error: 'Missing required fields',
-            details: { received: req.body }
+            details: { 
+              received: req.body,
+              required: ['amount', 'tag', 'userId']
+            }
           });
         }
-
-        // Get user ID from request
-        const userId = req.body.userId || req.headers['x-user-id'];
-        console.log('Adding expense for user:', userId);
 
         // Create new expense document
         const newExpense = {
           ...req.body,
-          userId,
           amount: parseFloat(req.body.amount),
           date: new Date().toISOString(),
           createdAt: new Date()
@@ -159,7 +165,10 @@ export default async function handler(req, res) {
 
         // Insert into database
         const result = await expenses.insertOne(newExpense);
-        console.log('Successfully added expense:', result.insertedId);
+        console.log('Successfully added expense:', {
+          insertedId: result.insertedId,
+          userId: newExpense.userId
+        });
 
         // Return success response
         return res.status(201).json({

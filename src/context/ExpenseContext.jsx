@@ -14,18 +14,38 @@ const getBaseUrl = () => {
   return '';
 };
 
+// Get or create a persistent user ID
+const getUserId = () => {
+  if (typeof window !== 'undefined') {
+    let userId = localStorage.getItem('userId');
+    if (!userId) {
+      // Generate a random user ID if none exists
+      userId = 'user_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('userId', userId);
+      console.log('Created new user ID:', userId);
+    } else {
+      console.log('Using existing user ID:', userId);
+    }
+    return userId;
+  }
+  return 'default-user';
+};
+
 export function ExpenseProvider({ children }) {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [userId] = useState(getUserId); // Initialize userId once when component mounts
 
   const fetchExpenses = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const baseUrl = getBaseUrl();
-      console.log('Fetching expenses from:', `${baseUrl}/api/expenses`);
-      const response = await fetch(`${baseUrl}/api/expenses`);
+      const url = `${baseUrl}/api/expenses?userId=${encodeURIComponent(userId)}`;
+      console.log('Fetching expenses from:', url);
+      
+      const response = await fetch(url);
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -57,12 +77,12 @@ export function ExpenseProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
-  // Fetch expenses when the component mounts
+  // Fetch expenses when the component mounts or userId changes
   useEffect(() => {
     fetchExpenses();
-  }, [fetchExpenses]);
+  }, [fetchExpenses, userId]);
 
   const addExpense = async (expenseData) => {
     console.log('Adding expense:', expenseData);
@@ -80,13 +100,19 @@ export function ExpenseProvider({ children }) {
       const baseUrl = getBaseUrl();
       console.log('Sending POST request to:', `${baseUrl}/api/expenses`);
       
+      // Add userId to the expense data
+      const expenseWithUser = {
+        ...expenseData,
+        userId // Use the userId from state
+      };
+      
       const response = await fetch(`${baseUrl}/api/expenses`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify(expenseData),
+        body: JSON.stringify(expenseWithUser),
       });
 
       console.log('POST response status:', response.status);

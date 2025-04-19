@@ -6,12 +6,6 @@ const PRESET_TAGS = [
   'Bills', 'Groceries', 'Entertainment', 'Health'
 ];
 
-// Get the current user ID (you'll need to implement your own user management)
-const getCurrentUserId = () => {
-  // For now, we'll use a mock user ID. Replace this with your actual user management
-  return localStorage.getItem('userId') || 'default-user';
-};
-
 export default function InputForm({ onSave = () => {} }) {
   const [amount, setAmount] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
@@ -30,9 +24,7 @@ export default function InputForm({ onSave = () => {} }) {
 
     try {
       setIsSubmitting(true);
-      const userId = getCurrentUserId();
       const entry = {
-        userId,
         amount: parseFloat(amount),
         tag: isCustomTag ? customTag : selectedTag,
         date: new Date().toISOString()
