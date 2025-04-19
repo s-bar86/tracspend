@@ -163,29 +163,63 @@ export function ExpenseProvider({ children }) {
     setError(null);
     try {
       const baseUrl = getBaseUrl();
+      console.log('Sending PUT request to:', `${baseUrl}/api/expenses`, {
+        id,
+        ...updateData
+      });
+
       const response = await fetch(`${baseUrl}/api/expenses`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ id, ...updateData }),
       });
+
+      console.log('PUT response status:', response.status);
+      
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('PUT response not OK:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorText
+        });
         throw new Error(`Failed to update expense: ${response.statusText}. ${errorText}`);
       }
+
       const result = await response.json();
+      console.log('PUT result:', result);
+      
       if (!result.success) {
+        console.error('Server reported failure:', result);
         throw new Error(result.error || 'Failed to update expense');
       }
+
       const updatedExpense = result.data;
+      console.log('Successfully updated expense:', updatedExpense);
+      
+      // Update the expenses state immediately
       setExpenses(prev => 
         prev.map(expense => 
           expense._id === id ? updatedExpense : expense
         )
       );
+
+      // Refresh the expenses list to ensure we have the latest data
+      await fetchExpenses();
+
       return updatedExpense;
     } catch (err) {
-      setError(err.message);
-      console.error('Error updating expense:', err);
+      const errorMessage = err.message || 'An unknown error occurred while updating expense';
+      console.error('Error updating expense:', {
+        message: errorMessage,
+        error: err,
+        id,
+        updateData
+      });
+      setError(errorMessage);
       throw err;
     } finally {
       setLoading(false);
@@ -201,21 +235,51 @@ export function ExpenseProvider({ children }) {
     setError(null);
     try {
       const baseUrl = getBaseUrl();
+      console.log('Sending DELETE request for expense:', id);
+
       const response = await fetch(`${baseUrl}/api/expenses?id=${id}`, {
         method: 'DELETE',
+        headers: {
+          'Accept': 'application/json'
+        }
       });
+
+      console.log('DELETE response status:', response.status);
+      
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('DELETE response not OK:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorText
+        });
         throw new Error(`Failed to delete expense: ${response.statusText}. ${errorText}`);
       }
+
       const result = await response.json();
+      console.log('DELETE result:', result);
+      
       if (!result.success) {
+        console.error('Server reported failure:', result);
         throw new Error(result.error || 'Failed to delete expense');
       }
+
+      console.log('Successfully deleted expense:', id);
+
+      // Update the expenses state immediately
       setExpenses(prev => prev.filter(expense => expense._id !== id));
+
+      // Refresh the expenses list to ensure we have the latest data
+      await fetchExpenses();
+
     } catch (err) {
-      setError(err.message);
-      console.error('Error deleting expense:', err);
+      const errorMessage = err.message || 'An unknown error occurred while deleting expense';
+      console.error('Error deleting expense:', {
+        message: errorMessage,
+        error: err,
+        id
+      });
+      setError(errorMessage);
       throw err;
     } finally {
       setLoading(false);
