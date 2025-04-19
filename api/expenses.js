@@ -5,7 +5,11 @@ console.log('API Route Module Loaded - Expenses Endpoint');
 
 // Initialize MongoDB client
 const uri = process.env.MONGODB_URI;
-console.log('MongoDB URI exists:', !!uri);
+console.log('MongoDB URI configuration check:', {
+  exists: !!uri,
+  length: uri ? uri.length : 0,
+  includes_protocol: uri ? uri.startsWith('mongodb') : false
+});
 
 let cachedClient = null;
 let cachedDb = null;
@@ -19,7 +23,7 @@ async function connectToDatabase() {
   }
 
   if (!uri) {
-    console.error('MONGODB_URI is not defined');
+    console.error('MONGODB_URI is not defined in environment');
     throw new Error('Please define the MONGODB_URI environment variable');
   }
 
@@ -30,8 +34,9 @@ async function connectToDatabase() {
     
     const client = await MongoClient.connect(uri, {
       maxPoolSize: 1,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 10000, // Increased timeout
+      socketTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
     });
     
     const dbName = uri.split('/').pop().split('?')[0] || 'tracspend';
@@ -52,15 +57,13 @@ async function connectToDatabase() {
       name: error.name,
       message: error.message,
       code: error.code,
-      stack: error.stack
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
     throw error;
   }
 }
 
 export default async function handler(req, res) {
-  console.log('Request received:', req.method, req.url);
-  
   // Set response headers first thing
   res.setHeader('Content-Type', 'application/json');
   
@@ -72,6 +75,14 @@ export default async function handler(req, res) {
     'Access-Control-Allow-Headers',
     'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
   );
+
+  console.log('Request received:', {
+    method: req.method,
+    url: req.url,
+    headers: req.headers,
+    query: req.query,
+    body: req.body
+  });
 
   // Handle preflight request
   if (req.method === 'OPTIONS') {
@@ -105,7 +116,12 @@ export default async function handler(req, res) {
         console.log('Sending successful response');
         return res.status(200).json(response);
       } catch (error) {
-        console.error('Error in GET request:', error);
+        console.error('Error in GET request:', {
+          name: error.name,
+          message: error.message,
+          code: error.code,
+          stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
         return res.status(500).json({
           success: false,
           error: 'Failed to fetch expenses',
@@ -170,7 +186,12 @@ export default async function handler(req, res) {
     });
     
   } catch (error) {
-    console.error('Fatal error:', error);
+    console.error('Fatal error:', {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
     return res.status(500).json({
       success: false,
       error: 'Internal server error',

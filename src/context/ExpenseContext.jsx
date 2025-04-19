@@ -5,8 +5,12 @@ const ExpenseContext = createContext();
 // Get the base URL from the current window location
 const getBaseUrl = () => {
   if (typeof window !== 'undefined') {
-    return window.location.origin;
+    // In production, use the current origin
+    const origin = window.location.origin;
+    console.log('Current origin:', origin);
+    return origin;
   }
+  console.warn('Window is not defined, falling back to empty string');
   return '';
 };
 
@@ -20,19 +24,35 @@ export function ExpenseProvider({ children }) {
     setError(null);
     try {
       const baseUrl = getBaseUrl();
+      console.log('Fetching expenses from:', `${baseUrl}/api/expenses`);
       const response = await fetch(`${baseUrl}/api/expenses`);
+      
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('Fetch response not OK:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorText
+        });
         throw new Error(`Failed to fetch expenses: ${response.statusText}. ${errorText}`);
       }
+
       const result = await response.json();
+      console.log('Fetch result:', result);
+      
       if (!result.success || !Array.isArray(result.data)) {
+        console.error('Invalid response format:', result);
         throw new Error(result.error || 'Invalid data format received from server');
       }
+      
       setExpenses(result.data);
     } catch (err) {
-      setError(err.message);
-      console.error('Error fetching expenses:', err);
+      const errorMessage = err.message || 'An unknown error occurred';
+      console.error('Error fetching expenses:', {
+        message: errorMessage,
+        error: err
+      });
+      setError(errorMessage);
       setExpenses([]); // Reset to empty array on error
     } finally {
       setLoading(false);
@@ -45,33 +65,63 @@ export function ExpenseProvider({ children }) {
   }, [fetchExpenses]);
 
   const addExpense = async (expenseData) => {
+    console.log('Adding expense:', expenseData);
+    
     if (!expenseData || !expenseData.amount || !expenseData.tag) {
-      throw new Error('Invalid expense data');
+      const error = new Error('Invalid expense data');
+      console.error('Validation failed:', { expenseData, error });
+      throw error;
     }
 
     setLoading(true);
     setError(null);
+    
     try {
       const baseUrl = getBaseUrl();
+      console.log('Sending POST request to:', `${baseUrl}/api/expenses`);
+      
       const response = await fetch(`${baseUrl}/api/expenses`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify(expenseData),
       });
+
+      console.log('POST response status:', response.status);
+      
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('POST response not OK:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorText
+        });
         throw new Error(`Failed to add expense: ${response.statusText}. ${errorText}`);
       }
+
       const result = await response.json();
+      console.log('POST result:', result);
+      
       if (!result.success) {
+        console.error('Server reported failure:', result);
         throw new Error(result.error || 'Failed to add expense');
       }
+
       const newExpense = result.data;
+      console.log('Successfully added expense:', newExpense);
+      
       setExpenses(prev => [newExpense, ...prev]);
       return newExpense;
     } catch (err) {
-      setError(err.message);
-      console.error('Error adding expense:', err);
+      const errorMessage = err.message || 'An unknown error occurred while adding expense';
+      console.error('Error adding expense:', {
+        message: errorMessage,
+        error: err,
+        expenseData
+      });
+      setError(errorMessage);
       throw err;
     } finally {
       setLoading(false);

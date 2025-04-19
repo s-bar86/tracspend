@@ -17,12 +17,19 @@ export default function InputForm({ onSave = () => {} }) {
   const [selectedTag, setSelectedTag] = useState('');
   const [customTag, setCustomTag] = useState('');
   const [isCustomTag, setIsCustomTag] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!amount || !(selectedTag || customTag)) return;
+    console.log('Form submission started', { amount, selectedTag, customTag, isCustomTag });
+    
+    if (!amount || !(selectedTag || customTag)) {
+      console.log('Form validation failed', { amount, selectedTag, customTag });
+      return;
+    }
 
     try {
+      setIsSubmitting(true);
       const userId = getCurrentUserId();
       const entry = {
         userId,
@@ -31,26 +38,44 @@ export default function InputForm({ onSave = () => {} }) {
         date: new Date().toISOString()
       };
 
+      console.log('Submitting expense:', entry);
       await onSave(entry);
+      console.log('Expense saved successfully');
+      
+      // Reset form
       setAmount('');
       setSelectedTag('');
       setCustomTag('');
       setIsCustomTag(false);
     } catch (error) {
       console.error('Error saving entry:', error);
-      // You might want to show an error message to the user here
+      alert('Failed to save expense. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleTagChange = (e) => {
     const value = e.target.value;
+    console.log('Tag changed:', value);
     if (value === 'custom') {
       setIsCustomTag(true);
       setSelectedTag('');
     } else {
+      setIsCustomTag(false);
       setSelectedTag(value);
     }
   };
+
+  // Debug current form state
+  console.log('Current form state:', {
+    amount,
+    selectedTag,
+    customTag,
+    isCustomTag,
+    isSubmitting,
+    isValid: Boolean(amount && (selectedTag || customTag))
+  });
 
   return (
     <motion.form
@@ -68,7 +93,10 @@ export default function InputForm({ onSave = () => {} }) {
           type="number"
           id="amount"
           value={amount}
-          onChange={(e) => setAmount(e.target.value)}
+          onChange={(e) => {
+            console.log('Amount changed:', e.target.value);
+            setAmount(e.target.value);
+          }}
           step="0.01"
           min="0"
           required
@@ -111,15 +139,19 @@ export default function InputForm({ onSave = () => {} }) {
       <div className="space-y-1.5 sm:space-y-2 flex items-center gap-4">
         <button
           type="submit"
+          disabled={isSubmitting || !amount || !(selectedTag || customTag)}
           className="w-full relative overflow-hidden bg-gradient-to-br from-primary/80 via-primary to-primary/90 text-white py-2 sm:py-2.5 px-4 sm:px-5 text-sm sm:text-base rounded-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_4px_8px_rgba(0,0,0,0.1)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_6px_12px_rgba(0,0,0,0.2)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5 active:translate-y-0 before:absolute before:inset-0 before:bg-gradient-to-t before:from-transparent before:to-white/10 before:opacity-50"
-          disabled={!amount || !(selectedTag || customTag)}
         >
-          Save
+          {isSubmitting ? 'Saving...' : 'Save'}
         </button>
         {isCustomTag && (
           <button
             type="button"
-            onClick={() => setIsCustomTag(false)}
+            onClick={() => {
+              console.log('Canceling custom tag');
+              setIsCustomTag(false);
+              setCustomTag('');
+            }}
             className="w-full relative overflow-hidden bg-gradient-to-br from-gray-100 via-gray-200 to-gray-100 text-gray-700 py-2 sm:py-2.5 px-4 sm:px-5 text-sm sm:text-base rounded-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_4px_8px_rgba(0,0,0,0.1)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_6px_12px_rgba(0,0,0,0.2)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-200 focus:ring-offset-2 transform hover:-translate-y-0.5 active:translate-y-0 before:absolute before:inset-0 before:bg-gradient-to-t before:from-transparent before:to-white/20 before:opacity-50"
           >
             Cancel
