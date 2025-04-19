@@ -25,11 +25,11 @@ export function ExpenseProvider({ children }) {
         const errorText = await response.text();
         throw new Error(`Failed to fetch expenses: ${response.statusText}. ${errorText}`);
       }
-      const data = await response.json();
-      if (!Array.isArray(data)) {
-        throw new Error('Invalid data format received from server');
+      const result = await response.json();
+      if (!result.success || !Array.isArray(result.data)) {
+        throw new Error(result.error || 'Invalid data format received from server');
       }
-      setExpenses(data);
+      setExpenses(result.data);
     } catch (err) {
       setError(err.message);
       console.error('Error fetching expenses:', err);
@@ -62,7 +62,11 @@ export function ExpenseProvider({ children }) {
         const errorText = await response.text();
         throw new Error(`Failed to add expense: ${response.statusText}. ${errorText}`);
       }
-      const newExpense = await response.json();
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to add expense');
+      }
+      const newExpense = result.data;
       setExpenses(prev => [newExpense, ...prev]);
       return newExpense;
     } catch (err) {
@@ -92,10 +96,14 @@ export function ExpenseProvider({ children }) {
         const errorText = await response.text();
         throw new Error(`Failed to update expense: ${response.statusText}. ${errorText}`);
       }
-      const updatedExpense = await response.json();
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update expense');
+      }
+      const updatedExpense = result.data;
       setExpenses(prev => 
         prev.map(expense => 
-          expense._id === id ? { ...expense, ...updateData } : expense
+          expense._id === id ? updatedExpense : expense
         )
       );
       return updatedExpense;
@@ -123,6 +131,10 @@ export function ExpenseProvider({ children }) {
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Failed to delete expense: ${response.statusText}. ${errorText}`);
+      }
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to delete expense');
       }
       setExpenses(prev => prev.filter(expense => expense._id !== id));
     } catch (err) {
