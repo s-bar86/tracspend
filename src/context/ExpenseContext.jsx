@@ -2,6 +2,14 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 
 const ExpenseContext = createContext();
 
+// Get the base URL from the current window location
+const getBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return '';
+};
+
 export function ExpenseProvider({ children }) {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -11,9 +19,11 @@ export function ExpenseProvider({ children }) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/expenses');
+      const baseUrl = getBaseUrl();
+      const response = await fetch(`${baseUrl}/api/expenses`);
       if (!response.ok) {
-        throw new Error(`Failed to fetch expenses: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch expenses: ${response.statusText}. ${errorText}`);
       }
       const data = await response.json();
       if (!Array.isArray(data)) {
@@ -42,13 +52,15 @@ export function ExpenseProvider({ children }) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/expenses', {
+      const baseUrl = getBaseUrl();
+      const response = await fetch(`${baseUrl}/api/expenses`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(expenseData),
       });
       if (!response.ok) {
-        throw new Error(`Failed to add expense: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Failed to add expense: ${response.statusText}. ${errorText}`);
       }
       const newExpense = await response.json();
       setExpenses(prev => [newExpense, ...prev]);
@@ -70,13 +82,15 @@ export function ExpenseProvider({ children }) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/expenses', {
+      const baseUrl = getBaseUrl();
+      const response = await fetch(`${baseUrl}/api/expenses`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, ...updateData }),
       });
       if (!response.ok) {
-        throw new Error(`Failed to update expense: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Failed to update expense: ${response.statusText}. ${errorText}`);
       }
       const updatedExpense = await response.json();
       setExpenses(prev => 
@@ -102,11 +116,13 @@ export function ExpenseProvider({ children }) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/expenses?id=${id}`, {
+      const baseUrl = getBaseUrl();
+      const response = await fetch(`${baseUrl}/api/expenses?id=${id}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
-        throw new Error(`Failed to delete expense: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Failed to delete expense: ${response.statusText}. ${errorText}`);
       }
       setExpenses(prev => prev.filter(expense => expense._id !== id));
     } catch (err) {
