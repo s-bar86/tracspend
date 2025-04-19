@@ -5,6 +5,7 @@
     { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "dist" } }
   ],
   "routes": [
+    { "src": "/api/auth/(.*)", "dest": "/api/auth/[...nextauth].js" },
     { "src": "/api/(.*)", "dest": "/api/$1" },
     { "src": "/(.*)", "dest": "/index.html" }
   ],
