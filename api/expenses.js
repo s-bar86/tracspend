@@ -1,9 +1,3 @@
-// Add Vercel Edge Runtime directive
-export const config = {
-  runtime: 'nodejs',
-  regions: ['pdx1']  // Portland region
-};
-
 import { MongoClient } from 'mongodb';
 
 // Immediately log that the file is being executed
