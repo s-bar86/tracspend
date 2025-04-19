@@ -7,22 +7,25 @@ const options = {
   useNewUrlParser: true,
 };
 
-let client;
-let clientPromise;
+let cachedClient = null;
+let cachedDb = null;
 
-if (!uri) {
-  throw new Error('Please add your Mongo URI to .env.local');
-}
-
-if (process.env.NODE_ENV === 'development') {
-  if (!global._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    global._mongoClientPromise = client.connect();
+async function connectToDatabase() {
+  if (cachedClient && cachedDb) {
+    return { client: cachedClient, db: cachedDb };
   }
-  clientPromise = global._mongoClientPromise;
-} else {
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+
+  if (!uri) {
+    throw new Error('Please define the MONGODB_URI environment variable');
+  }
+
+  const client = await MongoClient.connect(uri, options);
+  const db = client.db('tracspend');
+
+  cachedClient = client;
+  cachedDb = db;
+
+  return { client, db };
 }
 
 export default async function handler(req, res) {
@@ -42,8 +45,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const client = await clientPromise;
-    const db = client.db('tracspend');
+    const { db } = await connectToDatabase();
     const expenses = db.collection('expenses');
 
     switch (req.method) {
@@ -72,26 +74,43 @@ export default async function handler(req, res) {
         if (!id) {
           return res.status(400).json({ error: 'Missing ID' });
         }
-        const updateResult = await expenses.findOneAndUpdate(
-          { _id: id },
-          { $set: updateData },
-          { returnDocument: 'after' }
-        );
-        return res.json(updateResult.value);
+        try {
+          const updateResult = await expenses.findOneAndUpdate(
+            { _id: id },
+            { $set: updateData },
+            { returnDocument: 'after' }
+          );
+          if (!updateResult.value) {
+            return res.status(404).json({ error: 'Expense not found' });
+          }
+          return res.json(updateResult.value);
+        } catch (error) {
+          console.error('Update error:', error);
+          return res.status(500).json({ error: 'Failed to update expense', details: error.message });
+        }
 
       case 'DELETE':
         const { id: deleteId } = req.query;
         if (!deleteId) {
           return res.status(400).json({ error: 'Missing ID' });
         }
-        const deleteResult = await expenses.deleteOne({ _id: deleteId });
-        return res.json(deleteResult);
+        try {
+          const deleteResult = await expenses.deleteOne({ _id: deleteId });
+          if (deleteResult.deletedCount === 0) {
+            return res.status(404).json({ error: 'Expense not found' });
+          }
+          return res.json({ success: true });
+        } catch (error) {
+          console.error('Delete error:', error);
+          return res.status(500).json({ error: 'Failed to delete expense', details: error.message });
+        }
 
       default:
-        res.status(405).json({ error: 'Method not allowed' });
+        res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
+        return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
     }
   } catch (error) {
     console.error('Database error:', error);
-    res.status(500).json({ error: 'Internal server error', details: error.message });
+    return res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 } 
