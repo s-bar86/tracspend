@@ -16,6 +16,7 @@
   "routes": [
     {
       "src": "/api/expenses",
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       "dest": "/api/expenses.js"
     },
     {

@@ -1,4 +1,5 @@
 import { MongoClient } from 'mongodb';
+import { ObjectId } from 'mongodb';
 
 // Immediately log that the file is being executed
 console.log('API Route Module Loaded - Expenses Endpoint');
@@ -186,8 +187,110 @@ export default async function handler(req, res) {
         });
       }
     }
+
+    if (req.method === 'PUT') {
+      try {
+        console.log('Handling PUT request:', req.body);
+        
+        // Validate request body
+        if (!req.body || !req.body.id) {
+          console.error('Invalid request body:', req.body);
+          return res.status(400).json({
+            success: false,
+            error: 'Missing expense ID',
+            details: { received: req.body }
+          });
+        }
+
+        const { id, ...updateData } = req.body;
+        
+        // Convert amount to number if present
+        if (updateData.amount) {
+          updateData.amount = parseFloat(updateData.amount);
+        }
+
+        // Add update timestamp
+        updateData.updatedAt = new Date();
+
+        // Update in database
+        const result = await expenses.findOneAndUpdate(
+          { _id: new ObjectId(id) },
+          { $set: updateData },
+          { returnDocument: 'after' }
+        );
+
+        if (!result.value) {
+          return res.status(404).json({
+            success: false,
+            error: 'Expense not found'
+          });
+        }
+
+        console.log('Successfully updated expense:', {
+          id,
+          updates: updateData
+        });
+
+        // Return success response
+        return res.status(200).json({
+          success: true,
+          data: result.value
+        });
+
+      } catch (error) {
+        console.error('Error in PUT request:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to update expense',
+          message: error.message,
+          details: error.code
+        });
+      }
+    }
+
+    if (req.method === 'DELETE') {
+      try {
+        console.log('Handling DELETE request:', req.query);
+        
+        // Get expense ID from query parameter
+        const id = req.query.id;
+        if (!id) {
+          return res.status(400).json({
+            success: false,
+            error: 'Missing expense ID'
+          });
+        }
+
+        // Delete from database
+        const result = await expenses.findOneAndDelete({ _id: new ObjectId(id) });
+
+        if (!result.value) {
+          return res.status(404).json({
+            success: false,
+            error: 'Expense not found'
+          });
+        }
+
+        console.log('Successfully deleted expense:', id);
+
+        // Return success response
+        return res.status(200).json({
+          success: true,
+          data: result.value
+        });
+
+      } catch (error) {
+        console.error('Error in DELETE request:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to delete expense',
+          message: error.message,
+          details: error.code
+        });
+      }
+    }
     
-    // Handle other methods...
+    // If we reach here, method is not supported
     res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
     return res.status(405).json({ 
       success: false,
