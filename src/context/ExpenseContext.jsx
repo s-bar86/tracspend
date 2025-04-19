@@ -235,7 +235,13 @@ export function ExpenseProvider({ children }) {
     setError(null);
     try {
       const baseUrl = getBaseUrl();
-      console.log('Sending DELETE request for expense:', id);
+      console.log('Sending DELETE request for expense:', {
+        id,
+        url: `${baseUrl}/api/expenses?id=${id}`
+      });
+
+      // Update the expenses state immediately (optimistic update)
+      setExpenses(prev => prev.filter(expense => expense._id !== id));
 
       const response = await fetch(`${baseUrl}/api/expenses?id=${id}`, {
         method: 'DELETE',
@@ -244,7 +250,10 @@ export function ExpenseProvider({ children }) {
         }
       });
 
-      console.log('DELETE response status:', response.status);
+      console.log('DELETE response status:', {
+        status: response.status,
+        statusText: response.statusText
+      });
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -253,6 +262,10 @@ export function ExpenseProvider({ children }) {
           statusText: response.statusText,
           errorText
         });
+        
+        // Revert the optimistic update
+        await fetchExpenses();
+        
         throw new Error(`Failed to delete expense: ${response.statusText}. ${errorText}`);
       }
 
@@ -261,14 +274,21 @@ export function ExpenseProvider({ children }) {
       
       if (!result.success) {
         console.error('Server reported failure:', result);
+        
+        // Revert the optimistic update
+        await fetchExpenses();
+        
         throw new Error(result.error || 'Failed to delete expense');
       }
 
-      console.log('Successfully deleted expense:', id);
+      console.log('Successfully deleted expense:', {
+        id,
+        result
+      });
 
-      // Update the expenses state immediately
-      setExpenses(prev => prev.filter(expense => expense._id !== id));
-
+      // Wait a short moment before refreshing to ensure the delete has propagated
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // Refresh the expenses list to ensure we have the latest data
       await fetchExpenses();
 
