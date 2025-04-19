@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"node auth-server.js\"",
-    "build": "vite build",
+    "build": "vite build && node scripts/build.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },
