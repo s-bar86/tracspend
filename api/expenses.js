@@ -1,7 +1,13 @@
+// Add Vercel Edge Runtime directive
+export const config = {
+  runtime: 'nodejs',
+  regions: ['pdx1']  // Portland region
+};
+
 import { MongoClient } from 'mongodb';
 
 // Immediately log that the file is being executed
-console.log('API Route Module Loaded');
+console.log('API Route Module Loaded - Expenses Endpoint');
 
 // Initialize MongoDB client
 const uri = process.env.MONGODB_URI;
