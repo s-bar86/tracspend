@@ -7,7 +7,12 @@ import { useExpenses } from './context/ExpenseContext';
 import logo from './assets/logo.svg';
 
 function App() {
-  const { expenses, loading: expensesLoading, error } = useExpenses();
+  const { 
+    expenses, 
+    loading: expensesLoading, 
+    error,
+    addExpense 
+  } = useExpenses();
   const [isStarted, setIsStarted] = useState(false);
 
   if (!isStarted) {
@@ -63,7 +68,7 @@ function App() {
             <ErrorBoundary>
               <section>
                 <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Add New Expense</h2>
-                <InputForm />
+                <InputForm onSave={addExpense} />
               </section>
             </ErrorBoundary>
 

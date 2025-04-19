@@ -80,7 +80,7 @@ export default function HistoryView({ entries = [], onEdit = () => {}, onDelete 
   const handleSaveEdit = () => {
     if (!editAmount || !editTag) return;
     
-    onEdit(editingEntry.id, {
+    onEdit(editingEntry._id, {
       amount: parseFloat(editAmount),
       tag: editTag
     });
@@ -143,8 +143,8 @@ export default function HistoryView({ entries = [], onEdit = () => {}, onDelete 
             </div>
             <div className="space-y-2">
               {group.entries.map(entry => (
-                <div key={entry.id}>
-                  {editingEntry?.id === entry.id ? (
+                <div key={entry._id}>
+                  {editingEntry?._id === entry._id ? (
                     <div className="flex flex-col space-y-2 p-2 bg-gray-50 rounded-lg">
                       <input
                         type="number"
@@ -193,7 +193,7 @@ export default function HistoryView({ entries = [], onEdit = () => {}, onDelete 
                           Edit
                         </motion.button>
                         <motion.button
-                          onClick={() => handleDeleteClick(entry.id)}
+                          onClick={() => handleDeleteClick(entry._id)}
                           className="relative overflow-hidden px-2 py-1 text-xs sm:text-sm rounded-lg bg-gradient-to-br from-red-50 via-red-100 to-red-50 text-red-600 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_4px_8px_rgba(0,0,0,0.1)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,0.4),0_6px_12px_rgba(0,0,0,0.2)] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.2)] transition-all duration-200 transform hover:-translate-y-0.5 active:translate-y-0 before:absolute before:inset-0 before:bg-gradient-to-t before:from-transparent before:to-white/20 before:opacity-50"
                           whileTap={{ scale: 0.95 }}
                         >
