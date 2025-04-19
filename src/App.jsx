@@ -1,51 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import InputForm from './components/InputForm';
 import HistoryView from './components/HistoryView';
 import SpendingChart from './components/SpendingChart';
-import LoginButton from './components/LoginButton';
 import ErrorBoundary from './components/ErrorBoundary';
-import { useAuth } from './context/AuthContext';
 import { useExpenses } from './context/ExpenseContext';
 import logo from './assets/logo.svg';
 
 function App() {
-  const { user, loading: authLoading } = useAuth();
-  const { expenses, loading: expensesLoading, error, fetchExpenses } = useExpenses();
-  const [isStarted, setIsStarted] = useState(() => {
-    return !!user;
-  });
-
-  useEffect(() => {
-    if (user) {
-      setIsStarted(true);
-      fetchExpenses();
-    }
-  }, [user, fetchExpenses]);
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-tracspendBg flex items-center justify-center">
-        <div className="text-2xl font-semibold">Loading...</div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-tracspendBg flex flex-col items-center justify-center p-6">
-        <div className="text-center space-y-6 max-w-2xl">
-          <h1 className="text-4xl md:text-5xl font-bold">
-            Track Spending with Confidence
-          </h1>
-          <p className="text-lg md:text-xl text-gray-700">
-            A simple, beautiful way to track your daily expenses.
-            Keep your spending in check with smart categorization and insightful visualizations.
-          </p>
-          <LoginButton />
-        </div>
-      </div>
-    );
-  }
+  const { expenses, loading: expensesLoading, error } = useExpenses();
+  const [isStarted, setIsStarted] = useState(false);
 
   if (!isStarted) {
     return (
@@ -60,9 +23,9 @@ function App() {
           </p>
           <button
             onClick={() => setIsStarted(true)}
-            className="btn btn-primary text-lg"
+            className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-8 rounded-lg text-lg transition-colors"
           >
-            Start using TracSpend
+            Enter TracSpend
           </button>
         </div>
       </div>
@@ -79,9 +42,12 @@ function App() {
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-primary">TracSpend</h1>
           </div>
-          <div className="flex items-center gap-4">
-            <LoginButton />
-          </div>
+          <button
+            onClick={() => setIsStarted(false)}
+            className="text-gray-600 hover:text-gray-800 font-medium"
+          >
+            Exit
+          </button>
         </div>
       </header>
 

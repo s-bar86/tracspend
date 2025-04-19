@@ -8,13 +8,24 @@ const rootDir = join(__dirname, '..');
 async function copyApiRoutes() {
   try {
     // Create api directory in dist
-    await mkdir(join(rootDir, 'dist', 'api', 'auth'), { recursive: true });
+    await mkdir(join(rootDir, 'dist', 'api'), { recursive: true });
 
-    // Copy auth routes
-    await cp(
-      join(rootDir, 'api', 'auth', '[...nextauth].js'),
-      join(rootDir, 'dist', 'api', 'auth', '[...nextauth].js')
-    );
+    // Copy expenses route
+    const apiRoutes = [
+      'expenses.js'
+    ];
+
+    for (const route of apiRoutes) {
+      const sourcePath = join(rootDir, 'api', route);
+      const targetPath = join(rootDir, 'dist', 'api', route);
+      
+      try {
+        await cp(sourcePath, targetPath);
+        console.log(`✅ Copied ${route}`);
+      } catch (error) {
+        console.warn(`⚠️ Skipping ${route}: ${error.message}`);
+      }
+    }
 
     console.log('✅ API routes copied successfully');
   } catch (error) {

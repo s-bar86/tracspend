@@ -1,5 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
-import { useAuth } from './AuthContext';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 const ExpenseContext = createContext();
 
@@ -7,11 +6,8 @@ export function ExpenseProvider({ children }) {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { user } = useAuth();
 
   const fetchExpenses = useCallback(async () => {
-    if (!user) return;
-    
     setLoading(true);
     setError(null);
     try {
@@ -25,7 +21,12 @@ export function ExpenseProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, []);
+
+  // Fetch expenses when the component mounts
+  useEffect(() => {
+    fetchExpenses();
+  }, [fetchExpenses]);
 
   const addExpense = async (expenseData) => {
     setLoading(true);

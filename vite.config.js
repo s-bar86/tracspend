@@ -3,7 +3,6 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
-  envPrefix: ['VITE_', 'GOOGLE_', 'GITHUB_', 'NEXTAUTH_'],
   plugins: [
     react(),
     VitePWA({
@@ -25,32 +24,11 @@ export default defineConfig({
             type: 'image/svg+xml'
           }
         ]
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
       }
     })
   ],
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-        secure: false
-      }
-    }
-  },
   build: {
     outDir: 'dist',
-    assetsDir: 'assets',
-    sourcemap: true,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom'],
-          'auth-vendor': ['@auth/core', 'next-auth']
-        }
-      }
-    }
+    assetsDir: 'assets'
   }
 })

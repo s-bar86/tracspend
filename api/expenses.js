@@ -1,13 +1,4 @@
-import { getSession } from 'next-auth/react';
-import clientPromise from '../src/lib/db';
-
-export default async function handler(req, res) {
-  const session = await getSession({ req });
-
-  if (!session) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
+const handler = async (req, res) => {
   const client = await clientPromise;
   const db = client.db('tracspend');
   const expenses = db.collection('expenses');
@@ -16,7 +7,7 @@ export default async function handler(req, res) {
     switch (req.method) {
       case 'GET':
         const userExpenses = await expenses
-          .find({ userId: session.user.id })
+          .find({})
           .sort({ date: -1 })
           .toArray();
         res.json(userExpenses);
@@ -25,7 +16,6 @@ export default async function handler(req, res) {
       case 'POST':
         const newExpense = {
           ...req.body,
-          userId: session.user.id,
           createdAt: new Date(),
         };
         const result = await expenses.insertOne(newExpense);
@@ -35,7 +25,7 @@ export default async function handler(req, res) {
       case 'PUT':
         const { id, ...updateData } = req.body;
         const updateResult = await expenses.updateOne(
-          { _id: id, userId: session.user.id },
+          { _id: id },
           { $set: updateData }
         );
         res.json(updateResult);
@@ -44,8 +34,7 @@ export default async function handler(req, res) {
       case 'DELETE':
         const { id: deleteId } = req.query;
         const deleteResult = await expenses.deleteOne({
-          _id: deleteId,
-          userId: session.user.id,
+          _id: deleteId
         });
         res.json(deleteResult);
         break;
@@ -57,4 +46,6 @@ export default async function handler(req, res) {
     console.error('Database error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-} 
+}
+
+export default handler; 
