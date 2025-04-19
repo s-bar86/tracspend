@@ -6,31 +6,39 @@ const PRESET_TAGS = [
   'Bills', 'Groceries', 'Entertainment', 'Health'
 ];
 
+// Get the current user ID (you'll need to implement your own user management)
+const getCurrentUserId = () => {
+  // For now, we'll use a mock user ID. Replace this with your actual user management
+  return localStorage.getItem('userId') || 'default-user';
+};
+
 export default function InputForm({ onSave = () => {} }) {
   const [amount, setAmount] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
   const [customTag, setCustomTag] = useState('');
   const [isCustomTag, setIsCustomTag] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!amount || !(selectedTag || customTag)) return;
 
     try {
+      const userId = getCurrentUserId();
       const entry = {
-        id: crypto.randomUUID(),
+        userId,
         amount: parseFloat(amount),
         tag: isCustomTag ? customTag : selectedTag,
         date: new Date().toISOString()
       };
 
-      onSave(entry);
+      await onSave(entry);
       setAmount('');
       setSelectedTag('');
       setCustomTag('');
       setIsCustomTag(false);
     } catch (error) {
       console.error('Error saving entry:', error);
+      // You might want to show an error message to the user here
     }
   };
 

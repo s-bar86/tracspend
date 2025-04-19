@@ -88,7 +88,12 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       try {
         console.log('Executing GET request...');
-        const userExpenses = await expenses.find({}).sort({ date: -1 }).toArray();
+        // Get user ID from query parameter or header
+        const userId = req.query.userId || req.headers['x-user-id'];
+        console.log('Fetching expenses for user:', userId);
+        
+        const query = userId ? { userId } : {};
+        const userExpenses = await expenses.find(query).sort({ date: -1 }).toArray();
         console.log(`Found ${userExpenses.length} expenses`);
         
         const response = {
@@ -109,9 +114,56 @@ export default async function handler(req, res) {
         });
       }
     }
+
+    if (req.method === 'POST') {
+      try {
+        console.log('Handling POST request:', req.body);
+        
+        // Validate request body
+        if (!req.body || !req.body.amount || !req.body.tag) {
+          return res.status(400).json({
+            success: false,
+            error: 'Missing required fields',
+            details: { received: req.body }
+          });
+        }
+
+        // Get user ID from request
+        const userId = req.body.userId || req.headers['x-user-id'];
+        console.log('Adding expense for user:', userId);
+
+        // Create new expense document
+        const newExpense = {
+          ...req.body,
+          userId,
+          amount: parseFloat(req.body.amount),
+          date: new Date().toISOString(),
+          createdAt: new Date()
+        };
+
+        // Insert into database
+        const result = await expenses.insertOne(newExpense);
+        console.log('Successfully added expense:', result.insertedId);
+
+        // Return success response
+        return res.status(201).json({
+          success: true,
+          data: { ...newExpense, _id: result.insertedId }
+        });
+
+      } catch (error) {
+        console.error('Error in POST request:', error);
+        return res.status(500).json({
+          success: false,
+          error: 'Failed to add expense',
+          message: error.message,
+          details: error.code
+        });
+      }
+    }
     
     // Handle other methods...
-    res.setHeader('Allow', ['GET']);
+    res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
     return res.status(405).json({ 
       success: false,
       error: `Method ${req.method} Not Allowed` 
