@@ -11,9 +11,19 @@ function App() {
     expenses, 
     loading: expensesLoading, 
     error,
-    addExpense 
+    addExpense,
+    updateExpense,
+    deleteExpense 
   } = useExpenses();
   const [isStarted, setIsStarted] = useState(false);
+
+  // Debug expenses state
+  console.log('Current expenses state:', {
+    count: expenses?.length || 0,
+    expenses,
+    loading: expensesLoading,
+    error
+  });
 
   if (!isStarted) {
     return (
@@ -78,7 +88,7 @@ function App() {
                 {expensesLoading ? (
                   <div className="animate-pulse bg-gray-200 rounded-lg h-64"></div>
                 ) : (
-                  <SpendingChart expenses={expenses} />
+                  <SpendingChart entries={expenses} />
                 )}
               </section>
             </ErrorBoundary>
@@ -94,7 +104,11 @@ function App() {
                   ))}
                 </div>
               ) : (
-                <HistoryView expenses={expenses} />
+                <HistoryView 
+                  entries={expenses} 
+                  onEdit={updateExpense}
+                  onDelete={deleteExpense}
+                />
               )}
             </section>
           </ErrorBoundary>
@@ -105,7 +119,7 @@ function App() {
               {expensesLoading ? (
                 <div className="animate-pulse bg-gray-200 rounded-lg h-64"></div>
               ) : (
-                <SpendingChart expenses={expenses} />
+                <SpendingChart entries={expenses} />
               )}
             </section>
           </ErrorBoundary>
