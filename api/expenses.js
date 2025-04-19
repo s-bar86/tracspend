@@ -258,12 +258,6 @@ export default async function handler(req, res) {
 
     if (req.method === 'DELETE') {
       try {
-        console.log('Handling DELETE request:', {
-          query: req.query,
-          id: req.query.id,
-          idType: typeof req.query.id
-        });
-        
         // Get expense ID from query parameter
         const id = req.query.id;
         if (!id) {
@@ -275,73 +269,34 @@ export default async function handler(req, res) {
 
         // Validate ObjectId format
         if (!ObjectId.isValid(id)) {
-          console.error('Invalid ObjectId format:', id);
           return res.status(400).json({
             success: false,
             error: 'Invalid expense ID format'
           });
         }
 
-        try {
-          // Delete from database
-          const result = await expenses.findOneAndDelete(
-            { _id: new ObjectId(id) }
-          );
+        // Delete from database
+        const result = await expenses.findOneAndDelete(
+          { _id: new ObjectId(id) }
+        );
 
-          console.log('Delete operation result:', {
-            result,
-            hasValue: !!result,
-            valueExists: result?.value !== null,
-            id
+        if (!result || !result.value) {
+          return res.status(404).json({
+            success: false,
+            error: 'Expense not found'
           });
-
-          if (!result || !result.value) {
-            console.error('Expense not found for deletion:', {
-              id,
-              result
-            });
-            return res.status(404).json({
-              success: false,
-              error: 'Expense not found',
-              details: { id }
-            });
-          }
-
-          console.log('Successfully deleted expense:', {
-            id,
-            deletedDoc: result.value
-          });
-
-          // Return success response
-          return res.status(200).json({
-            success: true,
-            data: result.value
-          });
-        } catch (dbError) {
-          console.error('Database error during delete:', {
-            error: dbError,
-            message: dbError.message,
-            code: dbError.code,
-            id
-          });
-          throw dbError;
         }
 
-      } catch (error) {
-        console.error('Error in DELETE request:', {
-          error,
-          message: error.message,
-          code: error.code,
-          stack: error.stack
+        // Return success response
+        return res.status(200).json({
+          success: true,
+          data: result.value
         });
+
+      } catch (error) {
         return res.status(500).json({
           success: false,
-          error: 'Failed to delete expense',
-          message: error.message,
-          details: {
-            code: error.code,
-            type: error.name
-          }
+          error: 'Failed to delete expense'
         });
       }
     }

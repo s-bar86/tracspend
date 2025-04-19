@@ -235,11 +235,7 @@ export function ExpenseProvider({ children }) {
     setError(null);
     try {
       const baseUrl = getBaseUrl();
-      console.log('Sending DELETE request for expense:', {
-        id,
-        url: `${baseUrl}/api/expenses?id=${id}`
-      });
-
+      
       // Update the expenses state immediately (optimistic update)
       setExpenses(prev => prev.filter(expense => expense._id !== id));
 
@@ -249,42 +245,21 @@ export function ExpenseProvider({ children }) {
           'Accept': 'application/json'
         }
       });
-
-      console.log('DELETE response status:', {
-        status: response.status,
-        statusText: response.statusText
-      });
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('DELETE response not OK:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorText
-        });
-        
+        const errorData = await response.json();
         // Revert the optimistic update
         await fetchExpenses();
-        
-        throw new Error(`Failed to delete expense: ${response.statusText}. ${errorText}`);
+        throw new Error(errorData.error || 'Failed to delete expense');
       }
 
       const result = await response.json();
-      console.log('DELETE result:', result);
       
       if (!result.success) {
-        console.error('Server reported failure:', result);
-        
         // Revert the optimistic update
         await fetchExpenses();
-        
         throw new Error(result.error || 'Failed to delete expense');
       }
-
-      console.log('Successfully deleted expense:', {
-        id,
-        result
-      });
 
       // Wait a short moment before refreshing to ensure the delete has propagated
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -293,14 +268,7 @@ export function ExpenseProvider({ children }) {
       await fetchExpenses();
 
     } catch (err) {
-      const errorMessage = err.message || 'An unknown error occurred while deleting expense';
-      console.error('Error deleting expense:', {
-        message: errorMessage,
-        error: err,
-        id
-      });
-      setError(errorMessage);
-      throw err;
+      setError('Unable to delete expense. Please try again.');
     } finally {
       setLoading(false);
     }
