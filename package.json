@@ -17,6 +17,7 @@
     "express": "^5.1.0",
     "express-session": "^1.18.1",
     "framer-motion": "^12.7.4",
+    "mongodb": "^6.15.0",
     "next-auth": "^4.24.11",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.2.0",
