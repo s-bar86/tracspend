@@ -1,21 +1,23 @@
 {
   "name": "TracSpend",
   "short_name": "TracSpend",
-  "description": "A simple spending tracker for iPhone users",
+  "description": "Track and manage your expenses easily",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F1FFD4",
-  "theme_color": "#F1FFD4",
+  "background_color": "#4ECDC4",
+  "theme_color": "#4ECDC4",
   "icons": [
     {
       "src": "/icon-192.svg",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512.svg",
       "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }
