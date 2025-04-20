@@ -190,15 +190,11 @@ export default async function handler(req, res) {
 
     if (req.method === 'PUT') {
       try {
-        console.log('Handling PUT request:', req.body);
-        
         // Validate request body
         if (!req.body || !req.body.id) {
-          console.error('Invalid request body:', req.body);
           return res.status(400).json({
             success: false,
-            error: 'Missing expense ID',
-            details: { received: req.body }
+            error: 'Missing expense ID'
           });
         }
 
@@ -212,46 +208,30 @@ export default async function handler(req, res) {
         // Add update timestamp
         updateData.updatedAt = new Date();
 
-        try {
-          // Update in database
-          const result = await expenses.findOneAndUpdate(
-            { _id: new ObjectId(id) },
-            { $set: updateData },
-            { returnDocument: 'after' }
-          );
+        // Update in database
+        const result = await expenses.findOneAndUpdate(
+          { _id: new ObjectId(id) },
+          { $set: updateData },
+          { returnDocument: 'after' }
+        );
 
-          console.log('Update operation result:', result);
-
-          if (!result || !result.value) {
-            return res.status(404).json({
-              success: false,
-              error: 'Expense not found'
-            });
-          }
-
-          console.log('Successfully updated expense:', {
-            id,
-            updates: updateData,
-            result: result.value
+        if (!result || !result.value) {
+          return res.status(404).json({
+            success: false,
+            error: 'Expense not found'
           });
-
-          // Return success response
-          return res.status(200).json({
-            success: true,
-            data: result.value
-          });
-        } catch (dbError) {
-          console.error('Database error during update:', dbError);
-          throw dbError;
         }
 
+        // Return success response
+        return res.status(200).json({
+          success: true,
+          data: result.value
+        });
+
       } catch (error) {
-        console.error('Error in PUT request:', error);
         return res.status(500).json({
           success: false,
-          error: 'Failed to update expense',
-          message: error.message,
-          details: error.code
+          error: 'Failed to update expense'
         });
       }
     }

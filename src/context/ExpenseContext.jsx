@@ -161,12 +161,19 @@ export function ExpenseProvider({ children }) {
 
     setLoading(true);
     setError(null);
+    
+    // Store the original expenses state for rollback
+    const originalExpenses = [...expenses];
+    
     try {
       const baseUrl = getBaseUrl();
-      console.log('Sending PUT request to:', `${baseUrl}/api/expenses`, {
-        id,
-        ...updateData
-      });
+      
+      // Optimistically update the UI
+      setExpenses(prev => 
+        prev.map(expense => 
+          expense._id === id ? { ...expense, ...updateData } : expense
+        )
+      );
 
       const response = await fetch(`${baseUrl}/api/expenses`, {
         method: 'PUT',
@@ -176,51 +183,33 @@ export function ExpenseProvider({ children }) {
         },
         body: JSON.stringify({ id, ...updateData }),
       });
-
-      console.log('PUT response status:', response.status);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('PUT response not OK:', {
-          status: response.status,
-          statusText: response.statusText,
-          errorText
-        });
-        throw new Error(`Failed to update expense: ${response.statusText}. ${errorText}`);
+        // Revert to original state if request fails
+        setExpenses(originalExpenses);
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update expense');
       }
 
       const result = await response.json();
-      console.log('PUT result:', result);
       
       if (!result.success) {
-        console.error('Server reported failure:', result);
+        // Revert to original state if server reports failure
+        setExpenses(originalExpenses);
         throw new Error(result.error || 'Failed to update expense');
       }
 
-      const updatedExpense = result.data;
-      console.log('Successfully updated expense:', updatedExpense);
-      
-      // Update the expenses state immediately
+      // Update with the server response data
       setExpenses(prev => 
         prev.map(expense => 
-          expense._id === id ? updatedExpense : expense
+          expense._id === id ? result.data : expense
         )
       );
 
-      // Refresh the expenses list to ensure we have the latest data
-      await fetchExpenses();
-
-      return updatedExpense;
+      return result.data;
     } catch (err) {
-      const errorMessage = err.message || 'An unknown error occurred while updating expense';
-      console.error('Error updating expense:', {
-        message: errorMessage,
-        error: err,
-        id,
-        updateData
-      });
-      setError(errorMessage);
-      throw err;
+      setError('Unable to update expense. Please try again.');
+      // No need to throw the error since we're handling it here
     } finally {
       setLoading(false);
     }
@@ -233,10 +222,14 @@ export function ExpenseProvider({ children }) {
 
     setLoading(true);
     setError(null);
+    
+    // Store the original expenses state for rollback
+    const originalExpenses = [...expenses];
+    
     try {
       const baseUrl = getBaseUrl();
       
-      // Update the expenses state immediately (optimistic update)
+      // Optimistically update the UI
       setExpenses(prev => prev.filter(expense => expense._id !== id));
 
       const response = await fetch(`${baseUrl}/api/expenses?id=${id}`, {
@@ -247,28 +240,25 @@ export function ExpenseProvider({ children }) {
       });
       
       if (!response.ok) {
+        // Revert to original state if request fails
+        setExpenses(originalExpenses);
         const errorData = await response.json();
-        // Revert the optimistic update
-        await fetchExpenses();
         throw new Error(errorData.error || 'Failed to delete expense');
       }
 
       const result = await response.json();
       
       if (!result.success) {
-        // Revert the optimistic update
-        await fetchExpenses();
+        // Revert to original state if server reports failure
+        setExpenses(originalExpenses);
         throw new Error(result.error || 'Failed to delete expense');
       }
 
-      // Wait a short moment before refreshing to ensure the delete has propagated
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Refresh the expenses list to ensure we have the latest data
-      await fetchExpenses();
-
+      // The optimistic update was successful, no need to refresh
+      return result.data;
     } catch (err) {
       setError('Unable to delete expense. Please try again.');
+      // No need to throw the error since we're handling it here
     } finally {
       setLoading(false);
     }
