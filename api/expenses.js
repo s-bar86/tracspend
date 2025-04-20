@@ -238,7 +238,6 @@ export default async function handler(req, res) {
 
     if (req.method === 'DELETE') {
       try {
-        // Get expense ID from query parameter
         const id = req.query.id;
         if (!id) {
           return res.status(400).json({
@@ -247,7 +246,6 @@ export default async function handler(req, res) {
           });
         }
 
-        // Validate ObjectId format
         if (!ObjectId.isValid(id)) {
           return res.status(400).json({
             success: false,
@@ -255,22 +253,23 @@ export default async function handler(req, res) {
           });
         }
 
-        // Delete from database
+        // Delete from database using the newer findOneAndDelete method
         const result = await expenses.findOneAndDelete(
           { _id: new ObjectId(id) }
         );
 
-        if (!result || !result.value) {
+        // In newer MongoDB versions, the result is the document itself, not wrapped in .value
+        if (!result) {
           return res.status(404).json({
             success: false,
             error: 'Expense not found'
           });
         }
 
-        // Return success response
+        // Return success response with the deleted document
         return res.status(200).json({
           success: true,
-          data: result.value
+          data: result
         });
 
       } catch (error) {

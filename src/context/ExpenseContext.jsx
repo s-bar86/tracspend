@@ -217,7 +217,8 @@ export function ExpenseProvider({ children }) {
 
   const deleteExpense = async (id) => {
     if (!id) {
-      throw new Error('Invalid expense ID');
+      setError('Invalid expense ID');
+      return;
     }
 
     setLoading(true);
@@ -238,27 +239,29 @@ export function ExpenseProvider({ children }) {
           'Accept': 'application/json'
         }
       });
+
+      let result;
+      try {
+        result = await response.json();
+      } catch (parseError) {
+        setExpenses(originalExpenses);
+        setError('Server response error');
+        return;
+      }
       
-      if (!response.ok) {
+      if (!response.ok || !result.success) {
         // Revert to original state if request fails
         setExpenses(originalExpenses);
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to delete expense');
+        setError(result.error || 'Unable to delete expense');
+        return;
       }
 
-      const result = await response.json();
-      
-      if (!result.success) {
-        // Revert to original state if server reports failure
-        setExpenses(originalExpenses);
-        throw new Error(result.error || 'Failed to delete expense');
-      }
-
-      // The optimistic update was successful, no need to refresh
-      return result.data;
+      // The optimistic delete was successful, no need to do anything else
+      setError(null);
     } catch (err) {
-      setError('Unable to delete expense. Please try again.');
-      // No need to throw the error since we're handling it here
+      // Revert to original state and show error
+      setExpenses(originalExpenses);
+      setError('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
