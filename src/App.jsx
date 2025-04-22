@@ -96,12 +96,7 @@ function App() {
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-primary">TracSpend</h1>
           </div>
-          <button
-            onClick={handleSignOut}
-            className="text-gray-600 hover:text-gray-800 font-medium"
-          >
-            Sign Out
-          </button>
+          <UserMenu user={user} onSignOut={handleSignOut} onResetData={resetData} />
         </div>
       </header>
 

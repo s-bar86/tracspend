@@ -1,5 +1,6 @@
 import { MongoClient } from 'mongodb';
 import { ObjectId } from 'mongodb';
+import { adminAuth } from './firebaseAdmin.js';
 
 // Immediately log that the file is being executed
 console.log('API Route Module Loaded - Expenses Endpoint');
@@ -64,6 +65,20 @@ async function connectToDatabase() {
   }
 }
 
+async function verifyIdTokenFromHeader(req) {
+  const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    throw new Error('Missing or invalid Authorization header');
+  }
+  const idToken = authHeader.replace('Bearer ', '').trim();
+  try {
+    const decoded = await adminAuth.verifyIdToken(idToken);
+    return decoded;
+  } catch (err) {
+    throw new Error('Invalid or expired token');
+  }
+}
+
 export default async function handler(req, res) {
   // Set response headers first thing
   res.setHeader('Content-Type', 'application/json');
@@ -97,32 +112,24 @@ export default async function handler(req, res) {
     const expenses = db.collection('expenses');
     console.log('Database connection successful');
 
+    // Secure all endpoints: verify Firebase ID token and get userId (Firebase UID)
+    let decoded;
+    try {
+      decoded = await verifyIdTokenFromHeader(req);
+    } catch (err) {
+      return res.status(401).json({ success: false, error: err.message });
+    }
+    const userId = decoded.uid;
+
     if (req.method === 'GET') {
       try {
-        console.log('Executing GET request...');
-        // Get user ID from query parameter
-        const userId = req.query.userId;
-        console.log('Fetching expenses for user:', userId);
-        
-        if (!userId) {
-          return res.status(400).json({
-            success: false,
-            error: 'Missing userId parameter'
-          });
-        }
-
-        const query = { userId };
-        const userExpenses = await expenses.find(query).sort({ date: -1 }).toArray();
-        console.log(`Found ${userExpenses.length} expenses for user ${userId}`);
-        
-        const response = {
+        // Only fetch expenses for this user
+        const userExpenses = await expenses.find({ userId }).sort({ date: -1 }).toArray();
+        return res.status(200).json({
           success: true,
           count: userExpenses.length,
           data: userExpenses
-        };
-        
-        console.log('Sending successful response');
-        return res.status(200).json(response);
+        });
       } catch (error) {
         console.error('Error in GET request:', {
           name: error.name,
@@ -144,14 +151,13 @@ export default async function handler(req, res) {
         console.log('Handling POST request:', req.body);
         
         // Validate request body
-        if (!req.body || !req.body.amount || !req.body.tag || !req.body.userId) {
-          console.error('Invalid request body:', req.body);
+        if (!req.body || !req.body.amount || !req.body.tag) {
           return res.status(400).json({
             success: false,
             error: 'Missing required fields',
             details: { 
               received: req.body,
-              required: ['amount', 'tag', 'userId']
+              required: ['amount', 'tag']
             }
           });
         }
@@ -159,6 +165,7 @@ export default async function handler(req, res) {
         // Create new expense document
         const newExpense = {
           ...req.body,
+          userId, // Always associate with Firebase UID
           amount: parseFloat(req.body.amount),
           date: new Date().toISOString(),
           createdAt: new Date()
@@ -199,29 +206,24 @@ export default async function handler(req, res) {
         }
 
         const { id, ...updateData } = req.body;
-        
         // Convert amount to number if present
         if (updateData.amount) {
           updateData.amount = parseFloat(updateData.amount);
         }
-
         // Add update timestamp
         updateData.updatedAt = new Date();
-
-        // Update in database
+        // Only update if expense belongs to this user
         const result = await expenses.findOneAndUpdate(
-          { _id: new ObjectId(id) },
+          { _id: new ObjectId(id), userId },
           { $set: updateData },
           { returnDocument: 'after' }
         );
-
         if (!result || !result.value) {
           return res.status(404).json({
             success: false,
-            error: 'Expense not found'
+            error: 'Expense not found or not authorized'
           });
         }
-
         // Return success response
         return res.status(200).json({
           success: true,
@@ -253,19 +255,14 @@ export default async function handler(req, res) {
           });
         }
 
-        // Delete from database using the newer findOneAndDelete method
-        const result = await expenses.findOneAndDelete(
-          { _id: new ObjectId(id) }
-        );
-
-        // In newer MongoDB versions, the result is the document itself, not wrapped in .value
+        // Only delete if expense belongs to this user
+        const result = await expenses.findOneAndDelete({ _id: new ObjectId(id), userId });
         if (!result) {
           return res.status(404).json({
             success: false,
-            error: 'Expense not found'
+            error: 'Expense not found or not authorized'
           });
         }
-
         // Return success response with the deleted document
         return res.status(200).json({
           success: true,
