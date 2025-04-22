@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { auth } from '../firebase';
 import { updateProfile } from 'firebase/auth';
-
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 export default function UserMenu({ user, onSignOut, onResetData }) {
   const [editing, setEditing] = useState(false);
