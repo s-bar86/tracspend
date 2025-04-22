@@ -1,31 +1,67 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import InputForm from './components/InputForm';
 import HistoryView from './components/HistoryView';
 import SpendingChart from './components/SpendingChart';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useExpenses } from './context/ExpenseContext';
 import logo from './assets/logo.svg';
+import { auth } from './firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import AuthModal from './components/AuthModal';
 
 function App() {
-  const { 
-    expenses, 
-    loading: expensesLoading, 
+  const {
+    expenses,
+    loading: expensesLoading,
     error,
     addExpense,
     updateExpense,
-    deleteExpense 
+    deleteExpense
   } = useExpenses();
   const [isStarted, setIsStarted] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [user, setUser] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
 
-  // Debug expenses state
-  console.log('Current expenses state:', {
-    count: expenses?.length || 0,
-    expenses,
-    loading: expensesLoading,
-    error
-  });
+  // Listen for Firebase Auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setCheckingAuth(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  if (!isStarted) {
+  // If user is signed in, skip landing/auth
+  useEffect(() => {
+    if (user) {
+      setIsStarted(true);
+      setShowAuthModal(false);
+    }
+  }, [user]);
+
+  // Show modal after "Enter TracSpend" if not signed in
+  const handleEnter = () => {
+    setShowAuthModal(true);
+  };
+
+  // Handle sign out
+  const handleSignOut = async () => {
+    await signOut(auth);
+    setIsStarted(false);
+    setShowAuthModal(false);
+  };
+
+  // While checking auth, show nothing (or a spinner)
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-tracspendBg">
+        <div className="text-lg text-gray-700">Checking authentication...</div>
+      </div>
+    );
+  }
+
+  if (!user && !isStarted) {
     return (
       <div className="min-h-screen bg-tracspendBg flex flex-col items-center justify-center p-6">
         <div className="text-center space-y-6 max-w-2xl">
@@ -37,12 +73,15 @@ function App() {
             Keep your spending in check with smart categorization and insightful visualizations.
           </p>
           <button
-            onClick={() => setIsStarted(true)}
+            onClick={handleEnter}
             className="bg-primary hover:bg-primary-dark text-white font-bold py-3 px-8 rounded-lg text-lg transition-colors"
           >
             Enter TracSpend
           </button>
         </div>
+        {showAuthModal && (
+          <AuthModal onClose={() => setShowAuthModal(false)} />
+        )}
       </div>
     );
   }
@@ -58,10 +97,10 @@ function App() {
             <h1 className="text-xl sm:text-2xl font-bold text-primary">TracSpend</h1>
           </div>
           <button
-            onClick={() => setIsStarted(false)}
+            onClick={handleSignOut}
             className="text-gray-600 hover:text-gray-800 font-medium"
           >
-            Exit
+            Sign Out
           </button>
         </div>
       </header>
