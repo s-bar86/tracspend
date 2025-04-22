@@ -8,6 +8,7 @@ import logo from './assets/logo.svg';
 import { auth } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import AuthModal from './components/AuthModal';
+import UserMenu from './components/UserMenu';
 
 function App() {
   const {
