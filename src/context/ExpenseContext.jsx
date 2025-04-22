@@ -35,6 +35,7 @@ export function ExpenseProvider({ children }) {
   };
 
   const fetchExpenses = useCallback(async () => {
+    if (checkingAuth || !user) return; // Block until auth is ready
     setLoading(true);
     setError(null);
     try {
@@ -73,6 +74,7 @@ export function ExpenseProvider({ children }) {
   }, [fetchExpenses, user, checkingAuth]);
 
   const addExpense = async (expenseData) => {
+    if (checkingAuth || !user) return;
     if (!expenseData || !expenseData.amount || !expenseData.tag) {
       throw new Error('Invalid expense data');
     }
@@ -108,6 +110,7 @@ export function ExpenseProvider({ children }) {
   };
 
   const updateExpense = async (id, updateData) => {
+    if (checkingAuth || !user) return;
     if (!id || !updateData) {
       throw new Error('Invalid update data');
     }
@@ -146,6 +149,7 @@ export function ExpenseProvider({ children }) {
   };
 
   const deleteExpense = async (id) => {
+    if (checkingAuth || !user) return;
     if (!id) {
       setError('Invalid expense ID');
       return;
@@ -188,6 +192,7 @@ export function ExpenseProvider({ children }) {
 
   // Reset all data for the current user
   const resetData = async () => {
+    if (checkingAuth || !user) return;
     setLoading(true);
     setError(null);
     try {
