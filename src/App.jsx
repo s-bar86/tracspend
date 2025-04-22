@@ -17,7 +17,8 @@ function App() {
     error,
     addExpense,
     updateExpense,
-    deleteExpense
+    deleteExpense,
+    resetData
   } = useExpenses();
   const [isStarted, setIsStarted] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
