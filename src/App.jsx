@@ -22,25 +22,6 @@ function App() {
   } = useExpenses();
   const [isStarted, setIsStarted] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [user, setUser] = useState(null);
-  const [checkingAuth, setCheckingAuth] = useState(true);
-
-  // Listen for Firebase Auth state
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-      setCheckingAuth(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // If user is signed in, skip landing/auth
-  useEffect(() => {
-    if (user) {
-      setIsStarted(true);
-      setShowAuthModal(false);
-    }
-  }, [user]);
 
   // Show modal after "Enter TracSpend" if not signed in
   const handleEnter = () => {
@@ -55,6 +36,8 @@ function App() {
   };
 
   // While checking auth, show nothing (or a spinner)
+  const { user, checkingAuth } = useExpenses();
+
   if (checkingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-tracspendBg">

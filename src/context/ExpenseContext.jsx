@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { auth } from '../firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 const ExpenseContext = createContext();
 
@@ -15,10 +16,20 @@ export function ExpenseProvider({ children }) {
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [user, setUser] = useState(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // Listen for Firebase Auth state
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
+      setCheckingAuth(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Helper to get ID token for current user
   const getIdToken = async () => {
-    const user = auth.currentUser;
     if (!user) throw new Error('Not authenticated');
     return user.getIdToken();
   };
@@ -52,10 +63,14 @@ export function ExpenseProvider({ children }) {
     }
   }, []);
 
-  // Fetch expenses when the component mounts
+  // Fetch expenses when the user is authenticated
   useEffect(() => {
-    fetchExpenses();
-  }, [fetchExpenses]);
+    if (!checkingAuth && user) {
+      fetchExpenses();
+    } else if (!checkingAuth && !user) {
+      setExpenses([]);
+    }
+  }, [fetchExpenses, user, checkingAuth]);
 
   const addExpense = async (expenseData) => {
     if (!expenseData || !expenseData.amount || !expenseData.tag) {
@@ -211,6 +226,8 @@ export function ExpenseProvider({ children }) {
         updateExpense,
         deleteExpense,
         resetData,
+        user,
+        checkingAuth,
       }}
     >
       {children}
