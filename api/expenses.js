@@ -149,41 +149,56 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
       try {
         console.log('Handling POST request:', req.body);
-        
-        // Validate request body
-        if (!req.body || !req.body.amount || !req.body.tag) {
-          return res.status(400).json({
+        try {
+          console.log('[DEBUG] POST /api/expenses - Incoming body:', req.body);
+          console.log('[DEBUG] POST /api/expenses - Headers:', req.headers);
+          // Validate request body
+          if (!req.body || !req.body.amount || !req.body.tag) {
+            console.error('[DEBUG] POST /api/expenses - Missing required fields', req.body);
+            return res.status(400).json({
+              success: false,
+              error: 'Missing required fields',
+              details: { 
+                received: req.body,
+                required: ['amount', 'tag']
+              }
+            });
+          }
+
+          // Create new expense document
+          const newExpense = {
+            ...req.body,
+            userId, // Always associate with Firebase UID
+            amount: parseFloat(req.body.amount),
+            date: new Date().toISOString(),
+            createdAt: new Date()
+          };
+
+          try {
+            const result = await expenses.insertOne(newExpense);
+            console.log('[DEBUG] POST /api/expenses - Successfully added expense:', {
+              insertedId: result.insertedId,
+              userId: newExpense.userId,
+              expense: newExpense
+            });
+            // Return success response
+            return res.status(201).json({
+              success: true,
+              data: { ...newExpense, _id: result.insertedId }
+            });
+          } catch (dbErr) {
+            console.error('[DEBUG] POST /api/expenses - MongoDB insert error:', dbErr);
+            throw dbErr;
+          }
+        } catch (error) {
+          console.error('[DEBUG] POST /api/expenses - Error in POST handler:', error);
+          return res.status(500).json({
             success: false,
-            error: 'Missing required fields',
-            details: { 
-              received: req.body,
-              required: ['amount', 'tag']
-            }
+            error: 'Failed to add expense',
+            message: error.message,
+            details: error.code
           });
         }
-
-        // Create new expense document
-        const newExpense = {
-          ...req.body,
-          userId, // Always associate with Firebase UID
-          amount: parseFloat(req.body.amount),
-          date: new Date().toISOString(),
-          createdAt: new Date()
-        };
-
-        // Insert into database
-        const result = await expenses.insertOne(newExpense);
-        console.log('Successfully added expense:', {
-          insertedId: result.insertedId,
-          userId: newExpense.userId
-        });
-
-        // Return success response
-        return res.status(201).json({
-          success: true,
-          data: { ...newExpense, _id: result.insertedId }
-        });
-
       } catch (error) {
         console.error('Error in POST request:', error);
         return res.status(500).json({

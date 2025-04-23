@@ -70,8 +70,8 @@ export default function UserMenu({ user, onSignOut, onResetData }) {
         </svg>
       </button>
       {showMenu && (
-        <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
-          <div className="p-4 border-b">
+        <div className="absolute right-0 mt-3 w-60 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 p-2">
+          <div className="p-4 border-b flex flex-col gap-2">
             {editing ? (
               <div className="flex flex-col gap-2">
                 <input
@@ -102,10 +102,10 @@ export default function UserMenu({ user, onSignOut, onResetData }) {
               </div>
             )}
           </div>
-          <button className="w-full text-left px-4 py-2 hover:bg-gray-50" onClick={handleResetClick}>
+          <button className="w-full text-left px-4 py-2 hover:bg-gray-100 border-b border-gray-100 transition" onClick={handleResetClick}>
             Reset data
           </button>
-          <button className="w-full text-left px-4 py-2 hover:bg-gray-50 border-t" onClick={onSignOut}>
+          <button className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-b-xl transition" onClick={onSignOut}>
             Sign out
           </button>
         </div>
