@@ -212,6 +212,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'PUT') {
       try {
+        console.log('[DEBUG] PUT /api/expenses - Incoming body:', req.body);
         // Validate request body
         if (!req.body || !req.body.id) {
           return res.status(400).json({
@@ -221,6 +222,7 @@ export default async function handler(req, res) {
         }
 
         const { id, ...updateData } = req.body;
+        console.log('[DEBUG] PUT /api/expenses - id:', id, 'userId:', userId, 'updateData:', updateData);
         // Convert amount to number if present
         if (updateData.amount) {
           updateData.amount = parseFloat(updateData.amount);
@@ -233,6 +235,7 @@ export default async function handler(req, res) {
           { $set: updateData },
           { returnDocument: 'after' }
         );
+        console.log('[DEBUG] PUT /api/expenses - MongoDB update result:', result);
         if (!result || !result.value) {
           return res.status(404).json({
             success: false,

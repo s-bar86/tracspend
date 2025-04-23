@@ -100,6 +100,8 @@ export function ExpenseProvider({ children }) {
         throw new Error(result.error || 'Failed to add expense');
       }
       setExpenses(prev => [result.data, ...prev]);
+      // Always fetch canonical data from server after mutation
+      await fetchExpenses();
       return result.data;
     } catch (err) {
       setError(err.message || 'An unknown error occurred while adding expense');
@@ -140,6 +142,8 @@ export function ExpenseProvider({ children }) {
         throw new Error(result.error || 'Failed to update expense');
       }
       setExpenses(prev => prev.map(expense => expense._id === id ? result.data : expense));
+      // Always fetch canonical data from server after mutation
+      await fetchExpenses();
       return result.data;
     } catch (err) {
       setError('Unable to update expense. Please try again.');
@@ -161,6 +165,8 @@ export function ExpenseProvider({ children }) {
       const baseUrl = getBaseUrl();
       const token = await getIdToken();
       setExpenses(prev => prev.filter(expense => expense._id !== id));
+      // Always fetch canonical data from server after mutation
+      await fetchExpenses();
       const response = await fetch(`${baseUrl}/api/expenses?id=${id}`, {
         method: 'DELETE',
         headers: {
