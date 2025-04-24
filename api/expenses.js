@@ -80,6 +80,15 @@ async function verifyIdTokenFromHeader(req) {
 }
 
 export default async function handler(req, res) {
+  // LOG EVERY REQUEST for debugging
+  console.log('[DEBUG] /api/expenses handler called:', {
+    method: req.method,
+    url: req.url,
+    headers: req.headers,
+    query: req.query,
+    body: req.body
+  });
+
   // Set response headers first thing
   res.setHeader('Content-Type', 'application/json');
   
