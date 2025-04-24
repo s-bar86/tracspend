@@ -35,6 +35,7 @@ export function ExpenseProvider({ children }) {
   };
 
   const fetchExpenses = useCallback(async () => {
+    console.log('[DEBUG] fetchExpenses called', { checkingAuth, user });
     if (checkingAuth || !user) return; // Block until auth is ready
     setLoading(true);
     setError(null);
@@ -66,6 +67,7 @@ export function ExpenseProvider({ children }) {
 
   // Fetch expenses when the user is authenticated
   useEffect(() => {
+    console.log('[DEBUG] useEffect (fetchExpenses) fired', { checkingAuth, user });
     if (!checkingAuth && user) {
       fetchExpenses();
     } else if (!checkingAuth && !user) {
