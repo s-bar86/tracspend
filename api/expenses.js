@@ -123,8 +123,12 @@ export default async function handler(req, res) {
 
     if (req.method === 'GET') {
       try {
+        console.log('[DEBUG] GET /api/expenses - userId:', userId);
         // Only fetch expenses for this user
-        const userExpenses = await expenses.find({ userId }).sort({ date: -1 }).toArray();
+        const query = { userId };
+        console.log('[DEBUG] GET /api/expenses - MongoDB query:', query);
+        const userExpenses = await expenses.find(query).sort({ date: -1 }).toArray();
+        console.log('[DEBUG] GET /api/expenses - Returning count:', userExpenses.length);
         return res.status(200).json({
           success: true,
           count: userExpenses.length,
